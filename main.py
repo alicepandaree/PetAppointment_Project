@@ -13,7 +13,7 @@ DATA_DIRECTORY = Path(__file__).resolve().parent / "data"
 SAVE_FAILED = "!! Save failed. (Please close the CSV file in Excel and try again)"
 
 
-def show_errors(errors): #แสดงรายการข้อผิดพลาดทั้งหมดจากการตรวจสอบข้อมูล
+def show_errors(errors): # List all errors from the data validation process.
     print("!! Errors found. Please check your input !! :")
     for error in errors:
         print(f" * {error}")
@@ -27,7 +27,7 @@ def show_items(items):
         print(item)
 
 
-def handle_add(manager): #การเพิ่มข้อมูลใหม้
+def handle_add(manager): # to add new data.
     print(f"\n[Add New {manager.title}]")
     data = manager.prompt_data()
     errors = manager.validate(data)
@@ -42,7 +42,7 @@ def handle_add(manager): #การเพิ่มข้อมูลใหม้
         print(SAVE_FAILED)
 
 
-def handle_update(manager):#แก้ไขIDใหม่้
+def handle_update(manager): # update ID.
     print(f"\n[Update {manager.title} Information]")
     target_id = input("Enter the ID to update: ").strip()
     old_item = manager.find_by_id(target_id)
@@ -62,7 +62,7 @@ def handle_update(manager):#แก้ไขIDใหม่้
         print(SAVE_FAILED)
 
 
-def handle_delete(manager): #การลบข้อมูล
+def handle_delete(manager): # to delete data
     print(f"\n[Delete {manager.title} Information]")
     target_id = input("Enter the ID to delete: ").strip()
     target_item = manager.find_by_id(target_id)
@@ -84,7 +84,7 @@ def handle_delete(manager): #การลบข้อมูล
         print(SAVE_FAILED)
 
 
-def handle_search(manager): #การค้นหาข้อมูล
+def handle_search(manager): # to search data
     print(f"\n[Search {manager.title} Information]")
     keyword = input("Enter search keyword (Name or ID): ").strip()
     if keyword == "":
@@ -98,7 +98,7 @@ def handle_search(manager): #การค้นหาข้อมูล
         show_items(matched_items)
 
 
-def manager_screen(manager): # หน้าจอย่อยที่มีข้อมูเพิ่ม แก้ไข ลบ ค้นหา แสดงทั้งหมด
+def manager_screen(manager): # Sub-screen with options to add, edit, delete, search, and view all data.
     while True:
         print(f"\n=== Screen: {manager.title} ===")
         print("[1] Add New Record")
@@ -152,7 +152,7 @@ def load_all(all_managers):
     return True
 
 
-def main():#ฟังก์ชันหลักมีการสร้างManager เชื่อมความสัมพันธ์ โหลดไฟล์ CSV และวนลูปหน้าจอหลัก
+def main(): # The main function involves creating a Manager, establishing relationships, loading a CSV file, and running the main screen loop.
     owner_manager = OwnerManager(DATA_DIRECTORY /"owners.csv")
     pet_manager = PetManager(DATA_DIRECTORY /"pets.csv", owner_manager)
     appointment_manager = AppointmentManager(DATA_DIRECTORY /"appointments.csv", pet_manager)
