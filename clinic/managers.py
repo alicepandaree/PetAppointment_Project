@@ -42,6 +42,16 @@ def is_valid_datetime(value, fmt):
         return False
 
 
+def is_english(value):
+    """Check that value uses English characters only.
+
+    isascii() is True when every character is a basic English letter,
+    digit, space or symbol, so Thai text or letters such as "é" fail.
+    An empty string also passes; empty fields are checked separately.
+    """
+    return value.isascii()
+
+
 class BaseManager:
     # Child classes must set these values
     title = ""          # name shown in the menu, e.g. "Owners"
@@ -70,16 +80,47 @@ class BaseManager:
         if rows is None:
             return False
 
-        self.items = []
+        file_name = self.csv_handler.file_path.name
+        items = []
+        seen_ids = set()   # IDs found so far, to catch the same ID used twice
         # Row 1 of the file is the header, so data starts at row 2
         for row_number, row in enumerate(rows, start=2):
             try:
-                self.items.append(self.item_class.from_row(row))
+                item = self.item_class.from_row(row)
             except ValueError as error:
                 # Stop here: skipping the row would delete it on the next save
-                print(f"{self.csv_handler.file_path.name} row {row_number} is invalid: {error}")
+                print(f"{file_name} row {row_number} is invalid: {error}")
                 return False
+
+            item_id = self.get_id(item)
+            # Two records with one ID would make find_by_id, update and delete pick the wrong one
+            if item_id in seen_ids:
+                print(f"{file_name} row {row_number} is invalid: ID {item_id} is used more than once")
+                return False
+            seen_ids.add(item_id)
+            items.append(item)
+
+        # Replace self.items only when every row is valid
+        self.items = items
         return True
+
+    def check_items(self):
+        """Check every loaded record with the same rules as the menu (validate).
+
+        A CSV file can be edited outside the program, so a record may break a
+        rule even though its row loaded fine, e.g. a pet whose owner does not
+        exist or two appointments at the same time.
+        Call this only after all three files are loaded, because the rules
+        look up records in the other Managers.
+        Returns a list of problem messages; an empty list means every record is valid.
+        """
+        problems = []
+        for item in self.items:
+            item_id = self.get_id(item)
+            # exclude_id=item_id so a record is not counted as clashing with itself
+            for error in self.validate(item.to_row(), exclude_id=item_id):
+                problems.append(f"{self.csv_handler.file_path.name} {item_id}: {error}")
+        return problems
 
     def save(self):
         """Write every record in self.items to the file. Returns True on success."""
@@ -192,9 +233,13 @@ class OwnerManager(BaseManager):
         errors = []
         if not data["name"]:
             errors.append("Please enter a name.")
+        elif not is_english(data["name"]):   # elif: only check a name that was entered
+            errors.append("Please use English characters for the name.")
+
         phone = data["phone"]
-        # isascii() rejects Thai digits such as ๐๘๑, which isdigit() accepts
-        if not (phone.isascii() and phone.isdigit() and 9 <= len(phone) <= 10):
+        # isdigit() also accepts digits from other languages, such as Thai digits,
+        # so is_english() makes sure the phone number uses 0-9 only
+        if not (is_english(phone) and phone.isdigit() and 9 <= len(phone) <= 10):
             errors.append("Invalid phone number.")
         return errors
 
@@ -233,8 +278,14 @@ class PetManager(BaseManager):
         errors = []
         if not data["name"]:
             errors.append("Please enter the pet's name.")
+        elif not is_english(data["name"]):
+            errors.append("Please use English characters for the pet's name.")
+
         if not data["species"]:
             errors.append("Please enter the species.")
+        elif not is_english(data["species"]):
+            errors.append("Please use English characters for the species.")
+
         # Every pet must belong to an owner in the system
         if self.owner_manager.find_by_id(data["owner_id"]) is None:
             errors.append("Owner ID not found.")
@@ -281,6 +332,10 @@ class AppointmentManager(BaseManager):
             errors.append("Invalid date.")
         if not time_confirmed:
             errors.append("Invalid time.")
+
+        # The reason may be left empty, but if it is filled in it must be English
+        if not is_english(data["reason"]):
+            errors.append("Please use English characters for the reason.")
 
         # Check for a clash only when both date and time are valid
         if date_confirmed and time_confirmed:

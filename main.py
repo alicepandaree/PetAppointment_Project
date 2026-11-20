@@ -4,10 +4,13 @@ run: python main.py
 """
 
 from pathlib import Path
+# managers.py, models.py and csv_handler.py live in the clinic package (the clinic folder)
 from clinic.managers import AppointmentManager, OwnerManager, PetManager
 
+# The data folder always sits next to main.py, whichever folder you run from
 DATA_DIRECTORY = Path(__file__).resolve().parent / "data"
-SAVE_FAILED = "บันทึกไม่สำเร็จ กรุณาปิดไฟล์ใน Excel แล้วลองใหม่"
+# Shown by every menu when saving fails, so the message is written in one place only
+SAVE_FAILED = "!! Save failed. (Please close the CSV file in Excel and try again)"
 
 
 def show_errors(errors): #แสดงรายการข้อผิดพลาดทั้งหมดจากการตรวจสอบข้อมูล
@@ -36,7 +39,7 @@ def handle_add(manager): #การเพิ่มข้อมูลใหม้
     if manager.add(item):
         print(f"Record added successfully! (ID: {item_id})")
     else:
-        print("!! Save failed. (Please close the CSV file in Excel and try again)")
+        print(SAVE_FAILED)
 
 
 def handle_update(manager):#แก้ไขIDใหม่้
@@ -56,7 +59,7 @@ def handle_update(manager):#แก้ไขIDใหม่้
     if manager.update(target_id, updated_data):
         print("Information updated successfully.")
     else:
-        print("!! Save failed. (Please close the CSV file in Excel and try again)")
+        print(SAVE_FAILED)
 
 
 def handle_delete(manager): #การลบข้อมูล
@@ -78,7 +81,7 @@ def handle_delete(manager): #การลบข้อมูล
     if manager.delete(target_id):
         print("Record deleted from the system.")
     else:
-        print("!! Save failed. (Please close the CSV file in Excel and try again)")
+        print(SAVE_FAILED)
 
 
 def handle_search(manager): #การค้นหาข้อมูล
@@ -121,6 +124,34 @@ def manager_screen(manager): # หน้าจอย่อยที่มีข�
         else:
             print("Please enter a number between 0 and 5 only.")
 
+def load_all(all_managers):
+    """Load every CSV file, then check the records against each other.
+
+    Returns True only when every file loads and every record follows the rules.
+    main(), sample_data.py and sample_appointments.py all use this function.
+    """
+    error_files = []
+    for manager in all_managers:
+        if not manager.load():
+            error_files.append(manager.csv_handler.file_path.name)
+    if len(error_files) > 0:
+        print("!! Error loading files:", ", ".join(error_files))
+        print("Please check the files before starting the program.")
+        return False
+
+    # Checked after all files are loaded, because pets need owners and appointments need pets
+    problems = []
+    for manager in all_managers:
+        problems.extend(manager.check_items())
+    if len(problems) > 0:
+        print("!! Invalid data found in the files:")
+        for problem in problems:
+            print(f" * {problem}")
+        print("Please fix the files before starting the program.")
+        return False
+    return True
+
+
 def main():#ฟังก์ชันหลักมีการสร้างManager เชื่อมความสัมพันธ์ โหลดไฟล์ CSV และวนลูปหน้าจอหลัก
     owner_manager = OwnerManager(DATA_DIRECTORY /"owners.csv")
     pet_manager = PetManager(DATA_DIRECTORY /"pets.csv", owner_manager)
@@ -129,14 +160,9 @@ def main():#ฟังก์ชันหลักมีการสร้างMa
     owner_manager.pet_manager = pet_manager
     pet_manager.appointment_manager = appointment_manager
     all_managers = [owner_manager, pet_manager, appointment_manager]
-    error_files = []
 
-    for manager in all_managers:
-        if not manager.load():
-            error_files.append(manager.csv_handler.file_path.name)
-    if len(error_files) > 0:
-        print("!! Error loading files:", ", ".join(error_files))
-        print("Please check the files before starting the program.")
+    # Stop before showing the menu if any file is broken, so no data is overwritten
+    if not load_all(all_managers):
         return
     while True:
         print("\n==========================================")
