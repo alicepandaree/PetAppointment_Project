@@ -98,28 +98,28 @@ def handle_search(manager): # to search data
         show_items(matched_items)
 
 
-def manager_screen(manager): # Sub-screen with options to add, edit, delete, search, and view all data.
+def manager_menu(manager): # Sub-menu with options to add, edit, delete, search, and view all data (shared by all 3 Managers).
     while True:
-        print(f"\n=== Screen: {manager.title} ===")
+        print(f"\n=== {manager.title} Menu ===")
         print("[1] Add New Record")
         print("[2] Update Record")
         print("[3] Delete Record")
         print("[4] Search Record")
         print("[5] Show All Records")
-        print("[0] Back to Main Screen")
-        screen_choice = input("Select an option (0-5): ").strip()
+        print("[0] Back to Main Menu")
+        menu_choice = input("Select an option (0-5): ").strip()
 
-        if screen_choice == "1":
+        if menu_choice == "1":
             handle_add(manager)
-        elif screen_choice == "2":
+        elif menu_choice == "2":
             handle_update(manager)
-        elif screen_choice == "3":
+        elif menu_choice == "3":
             handle_delete(manager)
-        elif screen_choice == "4":
+        elif menu_choice == "4":
             handle_search(manager)
-        elif screen_choice == "5":
+        elif menu_choice == "5":
             show_items(manager.items)
-        elif screen_choice == "0":
+        elif menu_choice == "0":
             break
         else:
             print("Please enter a number between 0 and 5 only.")
@@ -152,7 +152,7 @@ def load_all(all_managers):
     return True
 
 
-def main(): # The main function involves creating a Manager, establishing relationships, loading a CSV file, and running the main screen loop.
+def main(): # The main function involves creating a Manager, establishing relationships, loading a CSV file, and running the main menu loop.
     owner_manager = OwnerManager(DATA_DIRECTORY /"owners.csv")
     pet_manager = PetManager(DATA_DIRECTORY /"pets.csv", owner_manager)
     appointment_manager = AppointmentManager(DATA_DIRECTORY /"appointments.csv", pet_manager)
@@ -176,11 +176,11 @@ def main(): # The main function involves creating a Manager, establishing relati
         main_choice = input("Please select a main menu option (0-3): ").strip()
 
         if main_choice == "1":
-            manager_screen(owner_manager)
+            manager_menu(owner_manager)
         elif main_choice == "2":
-            manager_screen(pet_manager)
+            manager_menu(pet_manager)
         elif main_choice == "3":
-            manager_screen(appointment_manager)
+            manager_menu(appointment_manager)
         elif main_choice == "0":
             print("Thank you for using the Pet Clinic Management System. Goodbye!")
             break

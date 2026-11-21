@@ -13,7 +13,7 @@ The `data` folder and its CSV files are created on the first run.
 ## Project structure
 
 ```
-main.py                 menus: main(), load_all(), manager_screen(), handle_*()
+main.py                 menus: main(), load_all(), manager_menu(), handle_*()
 sample_data.py          sample owners, pets and appointments
 sample_appointments.py  sample appointments only (needs pets PT001-PT024)
 clinic/
